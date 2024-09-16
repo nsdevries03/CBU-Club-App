@@ -14,7 +14,7 @@ const fs = require('fs');
         const content = await page.$('.page-main-content');
 
         // Get data
-        const ps = await page.evaluate(el => {
+        let ps = await page.evaluate(el => {
             return Array.from(el.querySelectorAll('p')).map(p => p.textContent);
             }, content);
         const h2s = await page.evaluate(el2 => {
@@ -22,25 +22,31 @@ const fs = require('fs');
             }, content);
 
         // Remove forbidden json characters
-
+        for (let i = 0; i < ps.length; i++) {
+            ps[i] = ps[i].replace(/'"/g, '');
+            ps[i] = ps[i].replace('\n', '');
+            ps[i] = ps[i].replace('\t', '');
+            ps[i] = ps[i].replace(' ', '');
+            ps[i] = ps[i].replace('President - ', '');
+            ps[i] = ps[i].replace('Advisor - ', '');
+        }
 
         // Convert text to json string
         let json = "";
         let pCount = 8;
         for (const h2 of h2s) {
-            json += "{\n\"title\": \"" + h2 + "\", \n";
+            json += "{\n\t\"title\": \"" + h2 + "\", \n";
             json += "\t\"description\": \"" + ps[pCount] + "\", \n";
             json += "\t\"president\": \"" + ps[pCount + 1] + "\", \n";
             json += "\t\"advisor\": \"" + ps[pCount + 2] + "\"\n}, \n";
             pCount += 3;
         }
-        json = json.slice(0, -1);
-        console.log(json);
+        json = json.slice(0, -3);
 
         // Save string to .json file
         fs.writeFile("output.json", json, (err) => {
             if (err) {
-                console.error("Error writing file:", err);
+                console.error("Error writing file: ", err);
             } else {
                 console.log("JSON file has been saved.");
             }
